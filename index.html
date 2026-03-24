@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LYNX FINAL PRO v6.5 - Interaktif Edition</title>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { 
+            --lynx: #00ffcc; --bg: #0b0e14; --nav: #161b22;
+            --qono-bg: rgba(13, 17, 23, 0.98); --accent: #0070f3; --border: rgba(255, 255, 255, 0.1);
+        }
+        
+        body, html { margin: 0; padding: 0; height: 100vh; background: var(--bg); overflow: hidden; font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        /* ANA TAŞIYICI */
+        .app-wrapper { display: flex; flex-direction: column; height: 100vh; width: 100vw; }
+        
+        /* ÜST BAR - SABİTLENDİ */
+        .navbar { 
+            height: 70px; background: var(--nav); display: flex; align-items: center; justify-content: space-between; 
+            padding: 0 30px; border-bottom: 2px solid var(--lynx); z-index: 1001; 
+            position: sticky; top: 0; flex-shrink: 0; /* Sayfa kaysa da burada kalır */
+        }
+        
+        .logo { color: var(--lynx); font-weight: 800; letter-spacing: 2px; font-size: 1.4rem; text-shadow: 0 0 10px var(--lynx); }
+        .nav-buttons { display: flex; gap: 10px; }
+        
+        .btn-run { 
+            background: var(--lynx); color: #000; border: none; padding: 12px 25px; border-radius: 8px; 
+            cursor: pointer; font-weight: 900; transition: 0.3s;
+        }
+        .btn-run:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--lynx); }
+        
+        .btn-download {
+            background: #fff; color: #000; border: none; padding: 12px 25px; border-radius: 8px; 
+            cursor: pointer; font-weight: 900; transition: 0.3s;
+        }
+        .btn-download:hover { transform: scale(1.05); background: #e0e0e0; }
+
+        /* EDİTÖR ALANI - NAVBAR DIŞINDAKİ ALANI KAPLAR */
+        .editor-container { flex: 1; position: relative; overflow: hidden; }
+        .CodeMirror { height: 100% !important; font-size: 18px !important; font-family: 'Fira Code', monospace; }
+
+        /* AI FAB & PENCERE */
+        .ai-fab {
+            position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%;
+            background: var(--lynx); color: #000; font-weight: 900; border: none; cursor: pointer; z-index: 999;
+            box-shadow: 0 5px 20px rgba(0,255,204,0.4); font-size: 20px;
+        }
+
+        .ai-window {
+            position: fixed; bottom: 100px; right: 30px; width: 400px; height: 600px;
+            background: var(--qono-bg); border: 1px solid var(--border); border-radius: 20px;
+            display: none; flex-direction: column; z-index: 1000; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            backdrop-filter: blur(15px);
+        }
+
+        .ai-header { padding: 15px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; color: #fff; }
+        .chat-box { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .msg { padding: 12px; border-radius: 12px; font-size: 14px; max-width: 85%; line-height: 1.5; }
+        .ai-msg { background: rgba(255,255,255,0.05); color: #fff; align-self: flex-start; border: 1px solid var(--border); }
+        .user-msg { background: var(--accent); color: #fff; align-self: flex-end; }
+
+        .ai-actions { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .ai-btn { 
+            padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; 
+            font-size: 12px; transition: 0.2s; text-align: center;
+        }
+        .apply-btn { background: var(--lynx); color: #000; }
+
+        .input-area { padding: 15px; display: flex; gap: 8px; border-top: 1px solid var(--border); }
+        .input-area input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 8px; outline: none; }
+        .input-area button { background: var(--lynx); border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <div class="navbar">
+        <div class="logo">LYNX PRO v6.5</div>
+        <div class="nav-buttons">
+            <button class="btn-run" onclick="runPreview()">PROJEYİ YÜRÜT ▶</button>
+            <button class="btn-download" onclick="downloadProject()">İNDİR 💾</button>
+        </div>
+    </div>
+    <div class="editor-container">
+        <textarea id="editor">F arka plan siyah
+
+F arka plan siyah
+F yazı ULUĞ BEY VE İNSANLIK TARİHİNDEKİ EŞSİZ BİLİMSEL MİRASI altın
+F yazı Bu kapsamlı sunumda, hem büyük bir hükümdar hem de olağanüstü bir bilim insanı olan Uluğ Bey'in hayatını, bilimsel çalışmalarını, astronomiye yaptığı katkıları ve insanlık tarihine bıraktığı derin izleri ayrıntılı ve anlaşılır bir şekilde ele alacağız turkuaz
+F yazı Bu sunum yalnızca tarihsel bilgi vermekle kalmayacak, aynı zamanda bilimin nasıl geliştiğini ve bir insanın merak duygusunun dünyayı nasıl değiştirebileceğini de gözler önüne serecektir yeşil
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ulugh_Beg.jpg/512px-Ulugh_Beg.jpg
+F bekle tık
+F temizle
+
+F yazı ULUĞ BEY'İN DOĞUMU VE AİLESİ mavi
+F yazı Uluğ Bey, 1394 yılında dünyaya gelmiş olup, büyük Türk hükümdarı Timur'un torunu ve Şahruh'un oğludur ve bu güçlü aile yapısı içerisinde büyümüştür yeşil
+F yazı Ancak onun hayatını diğer hükümdarlardan ayıran en önemli özellik, askeri başarılar yerine bilime, eğitime ve öğrenmeye olan derin ilgisi olmuştur turkuaz
+F yazı Küçük yaşlardan itibaren çevresindeki alimlerin etkisiyle bilimsel düşünceye yönelmiş ve bu yönü onun tüm hayatını şekillendirmiştir sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ulugh_Beg.jpg/512px-Ulugh_Beg.jpg
+F bekle tık
+F temizle
+
+F yazı ÇOCUKLUK DÖNEMİ VE MERAK DUYGUSU altın
+F yazı Uluğ Bey'in çocukluk yıllarında gökyüzüne olan ilgisi dikkat çekici bir şekilde öne çıkmış ve yıldızlara karşı duyduğu merak zamanla bilimsel bir tutkuya dönüşmüştür turkuaz
+F yazı O dönemde birçok hükümdar savaş ve fetih ile ilgilenirken, Uluğ Bey doğanın sırlarını çözmeye çalışmış ve bu yönüyle çağının çok ötesinde bir bakış açısına sahip olmuştur yeşil
+F yazı Bu merak duygusu onun ileride astronomi alanında yapacağı büyük keşiflerin temelini oluşturmuştur mor
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ulugh_Beg_Observatory.jpg/512px-Ulugh_Beg_Observatory.jpg
+F bekle tık
+F temizle
+
+F yazı EĞİTİM HAYATI VE BİLİMSEL GELİŞİMİ turuncu
+F yazı Uluğ Bey, dönemin en önemli alimlerinden ders alarak matematik, astronomi ve geometri gibi alanlarda derin bilgi sahibi olmuş ve kendisini sürekli geliştirmiştir mavi
+F yazı Bu eğitim süreci yalnızca teorik bilgilerle sınırlı kalmamış, aynı zamanda gözlem ve deney yapma isteğiyle birleşerek onu gerçek bir bilim insanı haline getirmiştir yeşil
+F yazı Onun bu disiplinli ve meraklı yapısı, bilimsel başarılarının arkasındaki en önemli faktörlerden biri olmuştur turkuaz
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ulugh_Beg_Observatory.jpg/512px-Ulugh_Beg_Observatory.jpg
+F bekle tık
+F temizle
+
+F yazı SEMERKAND RASATHANESİ VE BİLİMSEL DEVRİM altın
+F yazı Uluğ Bey, 1420'li yıllarda Semerkand şehrinde dönemin en büyük ve en gelişmiş rasathanelerinden birini kurarak astronomi tarihinde bir dönüm noktası oluşturmuştur turkuaz
+F yazı Bu rasathane, dev ölçüm araçları ve gelişmiş gözlem teknikleri sayesinde gökyüzünün çok daha hassas bir şekilde incelenmesine olanak sağlamıştır yeşil
+F yazı Bu merkezde yapılan çalışmalar, sadece kendi dönemini değil, sonraki yüzyılları da etkileyecek düzeyde önemli sonuçlar ortaya koymuştur sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ulugh_Beg_Observatory.jpg/512px-Ulugh_Beg_Observatory.jpg
+F bekle tık
+F temizle
+
+F yazı ZİJ-İ SULTANİ VE YILDIZ HARİTASI mor
+F yazı Uluğ Bey'in en önemli eserlerinden biri olan Zij-i Sultani, yıldızların konumlarını içeren son derece detaylı ve kapsamlı bir astronomi kataloğudur turkuaz
+F yazı Bu eser içerisinde 1000'den fazla yıldızın konumu büyük bir doğrulukla hesaplanmış ve bu veriler uzun yıllar boyunca bilim insanları tarafından referans olarak kullanılmıştır yeşil
+F yazı Bu çalışma, bilimsel metodoloji açısından da oldukça ileri düzeyde olup gözlem ve hesaplamanın mükemmel bir birleşimini temsil etmektedir sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Ulugh_Beg_star_catalogue.jpg/512px-Ulugh_Beg_star_catalogue.jpg
+F bekle tık
+F temizle
+
+F yazı BİLİMSEL DOĞRULUK VE BAŞARI kırmızı
+F yazı Uluğ Bey'in yaptığı ölçümler, günümüz modern astronomi cihazlarıyla yapılan ölçümlerle karşılaştırıldığında oldukça küçük farklar göstermektedir turkuaz
+F yazı Bu durum onun yaşadığı dönemdeki sınırlı teknolojiye rağmen ne kadar ileri bir bilimsel anlayışa sahip olduğunu açıkça ortaya koymaktadır yeşil
+F yazı Özellikle yıldız konumları ve astronomik hesaplamalar konusundaki başarısı, onu bilim tarihinin en önemli isimlerinden biri haline getirmiştir sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ulugh_Beg_Observatory.jpg/512px-Ulugh_Beg_Observatory.jpg
+F bekle tık
+F temizle
+
+F yazı HAYATININ TRAJİK SONU gri
+F yazı Ne yazık ki Uluğ Bey'in hayatı, bilimsel başarılarına rağmen trajik bir şekilde sona ermiş ve 1449 yılında kendi oğlu tarafından öldürülmüştür kırmızı
+F yazı Bu olay yalnızca bir hükümdarın kaybı değil, aynı zamanda insanlık için çok değerli bir bilim insanının kaybı anlamına gelmiştir turuncu
+F yazı Bu trajedi, tarih boyunca bilimin ve bilginin ne kadar hassas ve korunması gereken bir değer olduğunu da göstermektedir sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ulugh_Beg.jpg/512px-Ulugh_Beg.jpg
+F bekle tık
+F temizle
+
+F yazı ULUĞ BEY'İN BİLİMSEL MİRASI altın
+F yazı Günümüzde Uluğ Bey, astronomi tarihinin en önemli öncülerinden biri olarak kabul edilmekte ve onun yaptığı çalışmalar hala bilim dünyasında saygıyla anılmaktadır turkuaz
+F yazı Onun geliştirdiği yöntemler ve ortaya koyduğu veriler, modern bilimin temellerine katkı sağlamış ve birçok bilim insanına ilham vermiştir yeşil
+F yazı Uluğ Bey, bilime adanmış bir hayatın insanlık için ne kadar büyük bir değer taşıdığını gösteren en önemli örneklerden biridir sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Ulugh_Beg_Observatory.jpg/512px-Ulugh_Beg_Observatory.jpg
+F bekle tık
+F temizle
+
+F yazı SONUÇ VE GENEL DEĞERLENDİRME altın
+F yazı Uluğ Bey'in hayatı incelendiğinde, onun yalnızca bir hükümdar değil aynı zamanda bilime yön veren bir öncü olduğu açıkça görülmektedir turkuaz
+F yazı Onun çalışmaları, merakın, azmin ve bilime olan tutkunun insanlık tarihinde nasıl büyük etkiler yaratabileceğini göstermektedir yeşil
+F yazı Bu nedenle Uluğ Bey, sadece kendi döneminin değil, tüm insanlık tarihinin en önemli bilim insanlarından biri olarak kabul edilmektedir sarı
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ulugh_Beg.jpg/512px-Ulugh_Beg.jpg
+F bekle tık
+F temizle
+
+F yazı TEŞEKKÜRLER altın
+F yazı Bu detaylı sunumu izlediğiniz için teşekkür ederim, umarım Uluğ Bey hakkında derinlemesine bilgi edinmişsinizdir ve bu sunum sizin için faydalı olmuştur 🙌 turkuaz
+F resim https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/Ulugh_Beg.jpg/512px-Ulugh_Beg.jpg
+F tuş mavi https://tr.wikipedia.org/wiki/Ulu%C4%9F_Bey</textarea>
+    </div>
+</div>
+
+<button class="ai-fab" onclick="toggleAI()">Q</button>
+
+<div class="ai-window" id="ai-window">
+    <div class="ai-header"><strong>QONO CODER v6.5</strong> <button onclick="toggleAI()" style="background:none;border:none;color:#fff;cursor:pointer">×</button></div>
+    <div id="chat-box" class="chat-box">
+        <div class="msg ai-msg">Merhaba! LYNX uzmanıyım. Navbar artık sabitlendi, istediğin kadar kod yazabilirsin! Ne yapalım?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Tasarım isteyin...">
+        <button id="send-btn">➔</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script>
+    const editor = CodeMirror.fromTextArea(document.getElementById("editor"), {
+        theme: "dracula", lineNumbers: true, lineWrapping: true
+    });
+
+    function toggleAI() { 
+        const win = document.getElementById("ai-window"); 
+        win.style.display = win.style.display === "flex" ? "none" : "flex"; 
+    }
+
+    const colors = { "kırmızı": "#ff453a", "mavi": "#0a84ff", "yeşil": "#32d74b", "turkuaz": "#00ffcc", "sarı": "#ffd60a", "beyaz": "#ffffff", "siyah": "#000000" };
+
+    // --- ÖNİZLEME MOTORU ---
+    async function runPreview() {
+        let win = window.open('', '_blank');
+        win.document.write('<html><head><title>LYNX Preview</title><style>body{margin:0;height:100vh;display:flex;background:#000;color:#fff;font-family:sans-serif;transition:0.5s;cursor:pointer;user-select:none;}.p-orta-orta{align-items:center;justify-content:center;text-align:center;}.p-sol-üst{align-items:flex-start;justify-content:flex-start;padding:50px;}#c{display:flex;flex-direction:column;gap:20px;}</style></head><body id="s" class="p-orta-orta"><div id="c"></div></body></html>');
+        
+        const stage = win.document.getElementById('s');
+        const container = win.document.getElementById('c');
+        const lines = editor.getValue().split('\n');
+
+        for (let l of lines) {
+            const p = l.trim().split(/\s+/); if(p[0] !== 'F') continue;
+            const cmd = p[1]?.toLowerCase();
+            
+            if(cmd === 'arka') stage.style.backgroundColor = colors[p[3]] || p[3];
+            if(cmd === 'konum') stage.className = 'p-' + p[2];
+            if(cmd === 'yazı') container.innerHTML += `<h1 style="color:${colors[p[p.length-1]] || '#fff'};font-size:60px;margin:0;">${p.slice(2,-1).join(' ')}</h1>`;
+            if(cmd === 'tuş') container.innerHTML += `<a href="${p[3]}" style="background:${colors[p[2]]};color:#fff;padding:15px 30px;text-decoration:none;border-radius:10px;font-weight:bold;">${p.slice(4).join(' ')}</a>`;
+            if(cmd === 'resim') container.innerHTML += `<img src="${p[2]}" style="max-width:400px;border-radius:15px;">`;
+            if(cmd === 'temizle') container.innerHTML = '';
+            
+            if(cmd === 'bekle') {
+                if(p[2] === 'tık') {
+                    await new Promise(resolve => {
+                        const clickHandler = () => {
+                            win.document.removeEventListener('click', clickHandler);
+                            resolve();
+                        };
+                        win.document.addEventListener('click', clickHandler);
+                    });
+                } else {
+                    await new Promise(r => setTimeout(r, parseInt(p[2]) || 1000));
+                }
+            }
+        }
+    }
+
+    // --- DIŞA AKTARMA (HTML) ---
+    function downloadProject() {
+        const code = editor.getValue();
+        const safeCode = code.replace(/`/g, "\\`").replace(/\$/g, "\\$");
+        const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0;height:100vh;display:flex;background:#000;color:#fff;font-family:sans-serif;overflow:hidden;cursor:pointer;}.p-orta-orta{align-items:center;justify-content:center;text-align:center;}.p-sol-üst{align-items:flex-start;justify-content:flex-start;padding:50px;}#c{display:flex;flex-direction:column;gap:20px;}.wm{position:fixed;bottom:15px;left:15px;color:rgba(0,255,204,0.3);font-weight:900;letter-spacing:2px;font-size:12px;}</style></head><body id="s" class="p-orta-orta"><div id="c"></div><div class="wm">LYNX</div><script>const colors={"kırmızı":"#ff453a","mavi":"#0a84ff","yeşil":"#32d74b","turkuaz":"#00ffcc","beyaz":"#fff","siyah":"#000"};const code=\`${safeCode}\`;async function run(){const lines=code.split('\\n');for(let l of lines){const p=l.trim().split(/\\s+/);if(p[0]!=='F')continue;const cmd=p[1].toLowerCase();if(cmd==='arka')document.getElementById('s').style.backgroundColor=colors[p[3]]||p[3];if(cmd==='konum')document.getElementById('s').className='p-'+p[2];if(cmd==='yazı'){const col=colors[p[p.length-1]]||'#fff';document.getElementById('c').innerHTML+='<h1 style="color:'+col+';font-size:60px;margin:0;">'+p.slice(2,-1).join(' ')+'</h1>';}if(cmd==='temizle')document.getElementById('c').innerHTML='';if(cmd==='bekle'){if(p[2]==='tık'){await new Promise(res=>{const h=()=>{document.removeEventListener('click',h);res();};document.addEventListener('click',h);});}else{await new Promise(r=>setTimeout(r,parseInt(p[2])||1000));}}}}run();<\/script></body></html>`;
+        const blob = new Blob([html], { type: 'text/html' });
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'lynx_proje.html'; a.click();
+    }
+
+    // --- QONO AI SİSTEMİ ---
+    let keyIdx = 0;
+
+    async function chat() {
+        const input = document.getElementById('user-input');
+        const text = input.value.trim(); if(!text) return;
+        
+        appendMsg('user', text);
+        input.value = '';
+
+        let res = null;
+        while(keyIdx < KEYS.length) {
+            try {
+                res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${KEYS[keyIdx]}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            {role: "system", content: "Sen LYNX dili uzmanısın. Komutlar: F arka plan [renk], F yazı [metin] [renk], F konum [yer], F bekle [ms], F bekle tık, F temizle. Sadece kod yaz."},
+                            {role: "user", content: `Mevcut kod:\n${editor.getValue()}\n\nİstek: ${text}`}
+                        ]
+                    })
+                });
+                if(res.ok) break; else keyIdx++;
+            } catch { keyIdx++; }
+        }
+
+        const data = await res.json();
+        const aiText = data.choices[0].message.content;
+        const codeBlocks = aiText.match(/F\s.+/g);
+        
+        const msgDiv = appendMsg('ai', aiText);
+        if(codeBlocks) {
+            const code = codeBlocks.join('\n');
+            const actions = document.createElement('div');
+            actions.className = 'ai-actions';
+            const btnApply = document.createElement('button');
+            btnApply.className = 'ai-btn apply-btn'; btnApply.innerText = '✨ Kodu Editöre Uygula';
+            btnApply.onclick = () => editor.setValue(code);
+            actions.appendChild(btnApply);
+            msgDiv.appendChild(actions);
+        }
+    }
+
+    function appendMsg(role, text) {
+        const box = document.getElementById('chat-box');
+        const d = document.createElement('div');
+        d.className = `msg ${role}-msg`; d.innerText = text;
+        box.appendChild(d); box.scrollTop = box.scrollHeight;
+        return d;
+    }
+
+    document.getElementById('send-btn').onclick = chat;
+    document.getElementById('user-input').onkeypress = (e) => { if(e.key==='Enter') chat(); };
+</script>
+</body>
+</html>
